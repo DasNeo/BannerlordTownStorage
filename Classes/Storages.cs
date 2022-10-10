@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.GameMenus;
+using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Engine.GauntletUI;
@@ -29,6 +30,8 @@ namespace Storage.Classes
         /// </summary>
         public const double PurchasePriceMultiplier = 1;
 
+        public ItemRoster Roster { get; set; }
+
         /// <summary>
         /// Calculates the purchase price for the next storage taking <see cref="PurchasePriceMultiplier"/> into account
         /// </summary>
@@ -36,9 +39,32 @@ namespace Storage.Classes
         {
             get
             {
-                double multiplier = (StorageCount+1) * PurchasePriceMultiplier;
+                double multiplier = (StorageCount + 1) * PurchasePriceMultiplier;
                 return (int)Math.Round(PurchasePrice * multiplier);
             }
+        }
+
+        public int Capacity
+        {
+            get => this.Sum(r => r.Capacity);
+        }
+
+        /// <summary>
+        /// Calculates the purchase price for the next storage taking <see cref="PurchasePriceMultiplier"/> into account
+        /// </summary>
+        internal int lastPurchasePrice
+        {
+            get
+            {
+                double multiplier = (StorageCount) * PurchasePriceMultiplier;
+                return (int)Math.Round(PurchasePrice * multiplier);
+            }
+        }
+
+        public Storages()
+        {
+            if (Roster is null)
+                Roster = new ItemRoster();
         }
 
         public CampaignGameStarter cgs { get; set; }
@@ -50,6 +76,16 @@ namespace Storage.Classes
             get => storages.Count;
         }
 
+        public bool SellStorage(Settlement settlement)
+        {
+            if(Contains(settlement))
+            {
+                GiveGoldAction.ApplyBetweenCharacters(null, Hero.MainHero, lastPurchasePrice);
+                return Remove(settlement);
+            }
+            return false;
+        }
+
         public bool BuyStorage(Settlement settlement)
         {
             if(Hero.MainHero.Gold >= NextPurchasePrice
@@ -59,7 +95,6 @@ namespace Storage.Classes
                 Add(new Storage()
                 {
                     ID = StorageCount,
-                    Roster = new TaleWorlds.CampaignSystem.Roster.ItemRoster(),
                     Settlement = settlement
                 });
                 return true;

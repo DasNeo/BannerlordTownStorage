@@ -1,0 +1,22 @@
+﻿<Prefab>
+  <Constants>
+  </Constants>
+  <VisualDefinitions>
+  </VisualDefinitions>
+  <Window>
+    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="CoverChildren" SuggestedWidth="700" VerticalAlignment="Center" PositionXOffset="@PositionXOffset" PositionYOffset="@PositionYOffset" HorizontalAlignment="Center" Sprite="BlankWhiteSquare_9">
+      <Children>
+        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" VerticalAlignment="Center" HorizontalAlignment="Right" Sprite="BlankWhiteSquare_9" Color="#000000FF" AlphaFactor="1" MarginTop="5" MarginRight="5" MarginLeft="5" MarginBottom="5" LayoutImp.LayoutMethod="VerticalBottomToTop">
+          <Children>
+            <RichTextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="OverlayPopup.ButtonText" Brush.FontSize="20" Text="@Title" />
+            <ButtonWidget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedHeight="48" SuggestedWidth="240" Brush="GameMenu.Button" Brush.Color="#000000FF" Brush.AlphaFactor="1" Command.Click="ButtonAction" IsEnabled="true" MarginTop="2" MarginRight="2" MarginLeft="2" MarginBottom="2">
+              <Children>
+                <RichTextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" VerticalAlignment="Center" Brush="OverlayPopup.ButtonText" Brush.FontSize="20" Text="@ButtonText" />
+              </Children>
+            </ButtonWidget>
+          </Children>
+        </ListPanel>
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>

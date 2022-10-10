@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Extensions;
 using TaleWorlds.CampaignSystem.GameMenus;
 using TaleWorlds.CampaignSystem.Inventory;
 using TaleWorlds.CampaignSystem.Roster;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
+using TaleWorlds.Library;
 using TaleWorlds.Localization;
 
 namespace Storage
@@ -18,11 +20,56 @@ namespace Storage
     internal class StorageBehavior : CampaignBehaviorBase
     {
         public Storages Rosters = new Storages();
+
+        internal bool isInStorageInventory = false;
         
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, DailyTickEvent);
+            CampaignEvents.PlayerInventoryExchangeEvent.AddNonSerializedListener(this, PlayerInventoryExchangeEvent);
+
+            Rosters.Roster.RosterUpdatedEvent += Roster_RosterUpdatedEvent;
+            //InventoryManager.InventoryLogic.InventoryListener = new InventoryLogic(null);
+        }
+
+        private void Roster_RosterUpdatedEvent(ItemRosterElement item, int count)
+        {
+            if(isInStorageInventory && count > 0)
+            {
+                if(Rosters.Capacity < Rosters.Roster.Count)
+                {
+                    //var transCommand = TransferCommand.Transfer(count, InventoryLogic.InventorySide.OtherInventory, InventoryLogic.InventorySide.PlayerInventory,
+                    //    item, EquipmentIndex.None, EquipmentIndex.None, Hero.MainHero.CharacterObject, false);
+                    //InventoryManager.InventoryLogic.AddTransferCommand(transCommand);
+                    //InventoryManager.InventoryLogic.AddTransferCommand(new TransferCommand() { FromSide = InventoryLogic.InventorySide.OtherInventory, ToSide });
+                    var newItem = new ItemRosterElement(item.EquipmentElement, count);
+                    Hero.MainHero.PartyBelongedTo?.ItemRoster.Add(newItem);
+
+                    var oldItem = Rosters.Roster.FirstOrDefault(r => r.IsEqualTo(item));
+                    var oldItemIndex = Rosters.Roster.FindIndexOfElement(item.EquipmentElement);
+                    if (oldItem.Amount+1 == count)
+                        Rosters.Roster.AddToCounts(oldItem.EquipmentElement, -(oldItem.Amount+1));
+                    else
+                    {
+                        oldItem.Amount -= count;
+                    }
+                    
+                    //Rosters.Roster.(item);
+                }
+            }
+        }
+
+        private void PlayerInventoryExchangeEvent(List<(ItemRosterElement, int)> arg1, List<(ItemRosterElement, int)> arg2, bool arg3)
+        {
+            if(isInStorageInventory)
+            {
+                if(arg2.Count > Rosters.Capacity)
+                {
+
+                }
+            }
+            isInStorageInventory = false;
         }
 
         private void DailyTickEvent()
@@ -51,10 +98,27 @@ namespace Storage
                 return true;
             }), new GameMenuOption.OnConsequenceDelegate((args) =>
             {
-                Campaign.Current.GameMenuManager.SetNextMenu("player_town_storage_list");
+                GameMenu.SwitchToMenu("player_town_storage_actions");
             }), false, 2, true);
 
-            campaignGameStarter.AddGameMenuOption("player_town_storage_list", "player_town_storage_purchase", "Buy Storage", new GameMenuOption.OnConditionDelegate((args) =>
+            campaignGameStarter.AddGameMenu("player_town_storage_actions", "Storage", (args) =>
+            {
+                args.MenuTitle = new TextObject("Storage");
+            });
+
+            campaignGameStarter.AddGameMenuOption("player_town_storage_actions", "player_town_storage_purchase", "Manage Storages", new GameMenuOption.OnConditionDelegate((args) =>
+            {
+                return true;
+            }), new GameMenuOption.OnConsequenceDelegate((args) =>
+            {
+                StorageUI ui = new StorageUI();
+                ui.PushScreen(new Classes.UI.StorageVM("Testing Stuff here", "Click me", () =>
+                {
+                    ui.Close();
+                }));
+            }), false, 0, false);
+
+            campaignGameStarter.AddGameMenuOption("player_town_storage_actions", "player_town_storage_purchase", "Buy Storage", new GameMenuOption.OnConditionDelegate((args) =>
             {
                 Settlement settlement = Settlement.CurrentSettlement;
                 bool hasPurchasedStorage = Rosters.Contains(settlement);
@@ -76,11 +140,11 @@ namespace Storage
             }), new GameMenuOption.OnConsequenceDelegate((args) =>
             {
                 Rosters.BuyStorage(Settlement.CurrentSettlement);
-                Campaign.Current.GameMenuManager.ExitToLast();
+                GameMenu.SwitchToMenu("player_town_storage_actions");
                 //Campaign.Current.GameMenuManager.RefreshMenuOptions(Campaign.Current.CurrentMenuContext);
-            }), false, 0, false);
+            }), false, 1, false);
 
-            campaignGameStarter.AddGameMenuOption("player_town_storage_list", "player_town_storage_sell", "Sell Storage", new GameMenuOption.OnConditionDelegate((args) =>
+            campaignGameStarter.AddGameMenuOption("player_town_storage_actions", "player_town_storage_sell", "Sell Storage", new GameMenuOption.OnConditionDelegate((args) =>
             {
                 Settlement settlement = Settlement.CurrentSettlement;
                 bool hasPurchasedStorage = Rosters.Contains(settlement);
@@ -93,15 +157,15 @@ namespace Storage
                 return true;
             }), new GameMenuOption.OnConsequenceDelegate((args) =>
             {
-                Rosters.BuyStorage(Settlement.CurrentSettlement);
-                Campaign.Current.GameMenuManager.ExitToLast();
+                Rosters.SellStorage(Settlement.CurrentSettlement);
+                GameMenu.SwitchToMenu("player_town_storage_actions");
                 //Campaign.Current.GameMenuManager.RefreshMenuOptions(Campaign.Current.CurrentMenuContext);
-            }), false, 0, false);
+            }), false, 1, false);
 
-            campaignGameStarter.AddGameMenuOption("player_town_storage_list", "player_town_storage_enter", "Enter Storage", new GameMenuOption.OnConditionDelegate((args) =>
+            campaignGameStarter.AddGameMenuOption("player_town_storage_actions", "player_town_storage_enter", "Enter Storage", new GameMenuOption.OnConditionDelegate((args) =>
             {
                 Settlement settlement = Settlement.CurrentSettlement;
-                if(!Rosters.Contains(settlement))
+                if (!Rosters.Contains(settlement))
                     return false; // storage hasn't been bought in this settlement
 
 
@@ -112,12 +176,18 @@ namespace Storage
                 return true;
             }), new GameMenuOption.OnConsequenceDelegate((args) =>
             {
-                InventoryManager.OpenScreenAsStash(Rosters[Settlement.CurrentSettlement].Roster);
-            }), false, 0, true);
+                isInStorageInventory = true;
+                InventoryManager.OpenScreenAsStash(Rosters.Roster);
+            }), false, 2, true);
 
-
-
-            
+            campaignGameStarter.AddGameMenuOption("player_town_storage_actions", "player_town_storage_exit", "Leave", new GameMenuOption.OnConditionDelegate((args) =>
+            {
+                args.optionLeaveType = GameMenuOption.LeaveType.Leave;
+                return true;
+            }), (args) =>
+            {
+                GameMenu.ExitToLast();
+            }, false, -1, true);
         }
     }
 }

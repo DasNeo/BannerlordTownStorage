@@ -13,6 +13,5 @@ namespace Storage.Classes
         public int ID { get; set; }
         public Settlement Settlement { get; set; }
         public int Capacity { get; set; }
-        public ItemRoster Roster { get; set; }
     }
 }
